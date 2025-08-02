@@ -53,28 +53,6 @@ python main.py
 
 5. **Open your browser:** Navigate to `http://localhost:8000`
 
-## 🌐 Deployment
-
-### Heroku (Recommended)
-
-```bash
-# Install Heroku CLI first
-git add .
-git commit -m "Initial commit"
-heroku create your-app-name
-heroku config:set GOOGLE_API_KEY=your_actual_api_key
-git push heroku main
-```
-
-### Railway
-
-```bash
-# Install Railway CLI: npm install -g @railway/cli
-railway login
-railway init
-railway up
-# Set GOOGLE_API_KEY in Railway dashboard
-```
 
 ### Render
 
