@@ -6,7 +6,7 @@ langchain-core==0.1.47
 langchain-community==0.0.11
 langchain-huggingface==0.0.1
 langchain-google-genai==0.0.6
-langsmith==0.0.93
+langsmith==0.0.92
 chromadb==0.4.18
 pymupdf==1.23.9
 python-dotenv==1.0.0
