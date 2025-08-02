@@ -1,0 +1,1835 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Policy Analyzer</title>
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #06b6d4 100%);
+            --secondary-gradient: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            --success-color: #10b981;
+            --error-color: #ef4444;
+            --warning-color: #f59e0b;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --text-light: #94a3b8;
+            --border-color: #e2e8f0;
+            --surface: #ffffff;
+            --surface-elevated: #f8fafc;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--secondary-gradient);
+            min-height: 100vh;
+            padding: 1rem;
+            color: var(--text-primary);
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--surface);
+            border-radius: 24px;
+            box-shadow: var(--shadow-xl);
+            overflow: hidden;
+            animation: slideInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(40px) scale(0.95);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.05);
+            }
+        }
+
+        @keyframes shimmer {
+            0% {
+                background-position: -200px 0;
+            }
+
+            100% {
+                background-position: calc(200px + 100%) 0;
+            }
+        }
+
+        .header {
+            background: var(--primary-gradient);
+            color: white;
+            padding: 3rem 2rem 2.5rem 2rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="50" cy="50" r="0.5" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+            opacity: 0.1;
+        }
+
+        h1 {
+            font-size: 2.75rem;
+            font-weight: 800;
+            margin-bottom: 0.75rem;
+            background: linear-gradient(45deg, #ffffff, #e0e7ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            position: relative;
+            z-index: 1;
+        }
+
+        .subtitle {
+            font-size: 1.125rem;
+            opacity: 0.9;
+            font-weight: 400;
+            letter-spacing: 0.025em;
+            position: relative;
+            z-index: 1;
+        }
+
+        .content {
+            padding: 2.5rem;
+        }
+
+        .upload-section {
+            margin-bottom: 2.5rem;
+        }
+
+        .upload-section h2 {
+            color: var(--text-primary);
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .upload-area {
+            border: 2px dashed var(--border-color);
+            border-radius: 16px;
+            padding: 3rem 2rem;
+            text-align: center;
+            background: var(--surface-elevated);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-area::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.1), transparent);
+            transition: left 0.5s;
+        }
+
+        .upload-area:hover {
+            border-color: #6366f1;
+            background: rgba(99, 102, 241, 0.02);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .upload-area:hover::before {
+            left: 100%;
+        }
+
+        .upload-area.dragover {
+            border-color: #6366f1;
+            background: rgba(99, 102, 241, 0.05);
+            transform: scale(1.02);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .upload-area.uploading {
+            border-color: #6366f1;
+            background: rgba(99, 102, 241, 0.05);
+            pointer-events: none;
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            transition: transform 0.3s ease;
+        }
+
+        .upload-area:hover .upload-icon {
+            transform: scale(1.1) rotate(5deg);
+        }
+
+        .upload-text {
+            color: var(--text-secondary);
+            font-size: 1.125rem;
+            margin-bottom: 1.5rem;
+            transition: color 0.3s ease;
+        }
+
+        .upload-area:hover .upload-text {
+            color: var(--text-primary);
+        }
+
+        .browse-btn {
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            padding: 0.75rem 2rem;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .browse-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .browse-btn:active {
+            transform: translateY(0);
+        }
+
+        .upload-loader {
+            display: none;
+            margin: 1rem 0;
+        }
+
+        .upload-progress {
+            width: 100%;
+            height: 4px;
+            background: var(--border-color);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-progress-bar {
+            height: 100%;
+            background: var(--primary-gradient);
+            border-radius: 2px;
+            animation: shimmer 1.5s infinite;
+            background-size: 200px 100%;
+        }
+
+        .upload-status {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            text-align: center;
+        }
+
+        .document-status {
+            background: var(--surface);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-top: 1.5rem;
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-color);
+            animation: fadeIn 0.5s ease;
+        }
+
+        .document-status h3 {
+            color: var(--text-primary);
+            font-size: 1.125rem;
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-text {
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+        }
+
+        .file-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin: 1rem 0;
+        }
+
+        .file-tag {
+            background: rgba(99, 102, 241, 0.1);
+            color: #6366f1;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .clear-btn {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--error-color);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.875rem;
+        }
+
+        .clear-btn:hover {
+            background: rgba(239, 68, 68, 0.15);
+            transform: translateY(-1px);
+        }
+
+        .conversation-status {
+            margin: 1rem 0;
+            padding: 1rem;
+            background: rgba(99, 102, 241, 0.05);
+            border: 1px solid rgba(99, 102, 241, 0.1);
+            border-radius: 8px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .conversation-text {
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .conversation-controls {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .view-history-btn {
+            background: rgba(6, 182, 212, 0.1);
+            color: #06b6d4;
+            border: 1px solid rgba(6, 182, 212, 0.2);
+            padding: 0.4rem 0.8rem;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.75rem;
+        }
+
+        .view-history-btn:hover {
+            background: rgba(6, 182, 212, 0.15);
+            transform: translateY(-1px);
+        }
+
+        .view-history-btn.active {
+            background: rgba(6, 182, 212, 0.2);
+        }
+
+        .clear-conversation-btn {
+            background: rgba(99, 102, 241, 0.1);
+            color: #6366f1;
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            padding: 0.4rem 0.8rem;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.75rem;
+        }
+
+        .conversation-history {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: var(--surface-elevated);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            max-height: 400px;
+            overflow-y: auto;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+                max-height: 0;
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+                max-height: 400px;
+            }
+        }
+
+        .history-title {
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .history-item {
+            margin-bottom: 1rem;
+            padding: 0.75rem;
+            background: var(--surface);
+            border-radius: 8px;
+            border-left: 3px solid #6366f1;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .history-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .history-query {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            font-size: 0.8rem;
+        }
+
+        .history-response {
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            line-height: 1.4;
+        }
+
+        .history-decision {
+            display: inline-block;
+            padding: 0.2rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            margin-bottom: 0.3rem;
+        }
+
+        .history-decision.approved {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success-color);
+        }
+
+        .history-decision.rejected {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--error-color);
+        }
+
+        .history-decision.pending {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--warning-color);
+        }
+
+        .history-amount {
+            font-weight: 600;
+            color: var(--success-color);
+        }
+
+        .no-history,
+        .error-history {
+            text-align: center;
+            color: var(--text-light);
+            font-style: italic;
+            padding: 1rem;
+        }
+
+        .error-history {
+            color: var(--error-color);
+        }
+
+        .clear-conversation-btn:hover {
+            background: rgba(99, 102, 241, 0.15);
+            transform: translateY(-1px);
+        }
+
+        .query-section {
+            margin-bottom: 2rem;
+            animation: fadeIn 0.6s ease 0.2s both;
+        }
+
+        .query-section h2 {
+            color: var(--text-primary);
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .conversation-indicator {
+            margin-bottom: 1.5rem;
+            animation: fadeIn 0.5s ease;
+        }
+
+        /* Detailed Conversation Modal */
+        .conversation-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .conversation-modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 16px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 85vh;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .conversation-modal-header {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1.5rem;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .conversation-modal-header h2 {
+            margin: 0;
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+
+        .conversation-nav {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .nav-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-btn:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .nav-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .conversation-counter {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .close-modal {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .close-modal:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: rotate(90deg);
+        }
+
+        .conversation-modal-body {
+            background: rgba(255, 255, 255, 0.95);
+            color: #333;
+            padding: 2rem;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        .detailed-conversation {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .conversation-query {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            font-weight: 600;
+        }
+
+        .conversation-decision-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .conversation-decision-section h3 {
+            color: #333;
+            margin-bottom: 0.8rem;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .decision-badge {
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .decision-badge.approved {
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+
+        .decision-badge.rejected {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .decision-badge.pending {
+            background: #fff3e0;
+            color: #ef6c00;
+        }
+
+        .amount-display {
+            background: linear-gradient(135deg, #ff9a9e, #fecfef);
+            color: #333;
+            padding: 0.8rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            font-weight: 600;
+            font-size: 1.1rem;
+            text-align: center;
+        }
+
+        .justification-text {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 1rem;
+            border-radius: 0 8px 8px 0;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+        }
+
+        .clauses-section {
+            margin-top: 1.5rem;
+        }
+
+        .clause-detail {
+            background: #ffffff;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .clause-header {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 0.8rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .clause-content {
+            padding: 1rem;
+        }
+
+        .clause-text {
+            background: #f8f9fa;
+            padding: 0.8rem;
+            border-radius: 6px;
+            border-left: 3px solid #667eea;
+            margin-bottom: 1rem;
+            font-style: italic;
+        }
+
+        .conversation-tip {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 12px;
+            padding: 1rem;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            line-height: 1.5;
+        }
+
+        .conversation-context {
+            margin-bottom: 1rem;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .conversation-badge {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-align: center;
+            box-shadow: var(--shadow-md);
+        }
+
+        .input-section {
+            margin-bottom: 2rem;
+        }
+
+        .input-label {
+            display: block;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.75rem;
+            font-size: 1rem;
+        }
+
+        textarea {
+            width: 100%;
+            height: 120px;
+            padding: 1rem;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            font-size: 1rem;
+            font-family: inherit;
+            resize: vertical;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: var(--surface);
+            color: var(--text-primary);
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+            transform: translateY(-1px);
+        }
+
+        textarea::placeholder {
+            color: var(--text-light);
+        }
+
+        .analyze-btn {
+            width: 100%;
+            padding: 1rem 2rem;
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .analyze-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .analyze-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .analyze-btn:hover::before {
+            left: 100%;
+        }
+
+        .analyze-btn:active {
+            transform: translateY(0);
+        }
+
+        .analyze-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading-spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top: 2px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 0.5rem;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        #response-container {
+            margin-top: 2.5rem;
+            animation: fadeIn 0.6s ease;
+        }
+
+        .response-section {
+            background: var(--surface);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow-md);
+            border-left: 4px solid #6366f1;
+            transition: all 0.3s ease;
+            animation: slideInUp 0.5s ease;
+        }
+
+        .response-section:hover {
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-2px);
+        }
+
+        .response-section h3 {
+            color: var(--text-primary);
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .icon {
+            font-size: 1.25rem;
+        }
+
+        .decision-approved {
+            border-left-color: var(--success-color);
+        }
+
+        .decision-rejected {
+            border-left-color: var(--error-color);
+        }
+
+        .decision-pending {
+            border-left-color: var(--warning-color);
+        }
+
+        .amount {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--success-color);
+            margin: 0.5rem 0;
+        }
+
+        .justification {
+            line-height: 1.7;
+            color: var(--text-secondary);
+            font-size: 1rem;
+        }
+
+        .clause {
+            background: var(--surface-elevated);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: fadeIn 0.5s ease;
+        }
+
+        .clause:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+            border-color: rgba(99, 102, 241, 0.3);
+        }
+
+        .clause h4 {
+            color: var(--text-primary);
+            font-size: 1rem;
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .clause-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .clause-meta {
+            font-size: 0.7rem;
+            color: var(--text-light);
+            background: rgba(99, 102, 241, 0.1);
+            padding: 0.2rem 0.5rem;
+            border-radius: 8px;
+            margin-left: auto;
+        }
+
+        .clause-content {
+            color: var(--text-secondary);
+            line-height: 1.6;
+            font-size: 0.875rem;
+            margin-bottom: 1rem;
+        }
+
+        .source-snippet {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.05), rgba(139, 92, 246, 0.05));
+            border: 1px solid rgba(99, 102, 241, 0.1);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 0.75rem;
+            position: relative;
+        }
+
+        .snippet-label {
+            position: absolute;
+            top: -8px;
+            left: 12px;
+            background: var(--surface);
+            color: var(--text-secondary);
+            font-size: 0.65rem;
+            font-weight: 600;
+            padding: 0 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .snippet-text {
+            font-size: 0.8rem;
+            line-height: 1.5;
+            color: var(--text-primary);
+            margin: 0.5rem 0;
+        }
+
+        .highlighted-text {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.3), rgba(251, 191, 36, 0.3));
+            padding: 0.1rem 0.2rem;
+            border-radius: 3px;
+            font-weight: 600;
+            color: var(--text-primary);
+            position: relative;
+        }
+
+        .highlighted-text::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #f59e0b, #fbbf24);
+            border-radius: 1px;
+        }
+
+        .highlight-legend {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+            font-size: 0.7rem;
+            color: var(--text-light);
+        }
+
+        .highlight-indicator {
+            width: 12px;
+            height: 12px;
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.3), rgba(251, 191, 36, 0.3));
+            border-radius: 2px;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .error-message {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--error-color);
+            padding: 1rem;
+            border-radius: 12px;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            animation: fadeIn 0.5s ease;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 0.5rem;
+            }
+
+            .header {
+                padding: 2rem 1.5rem;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .content {
+                padding: 1.5rem;
+            }
+
+            .upload-area {
+                padding: 2rem 1rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>✨ AI Document Analyzer</h1>
+            <p class="subtitle">Upload documents, analyze them with advanced AI, and get intelligent insights instantly.
+            </p>
+        </div>
+
+        <div class="content">
+            <!-- Document Upload Section -->
+            <div class="upload-section">
+                <h2>📁 Upload Documents</h2>
+                <div class="upload-area" id="upload-area">
+                    <div class="upload-icon">📤</div>
+                    <p class="upload-text">Drag & drop PDF files here or click to browse</p>
+                    <input type="file" id="file-input" accept=".pdf" multiple style="display: none;">
+                    <button class="browse-btn" onclick="document.getElementById('file-input').click()">Browse
+                        Files</button>
+
+                    <div class="upload-loader" id="upload-loader">
+                        <div class="upload-progress">
+                            <div class="upload-progress-bar"></div>
+                        </div>
+                        <div class="upload-status" id="upload-status">Processing document...</div>
+                    </div>
+                </div>
+
+                <div id="document-status" class="document-status" style="display: none;">
+                    <h3>📋 Document Status</h3>
+                    <p id="status-text" class="status-text">No documents uploaded</p>
+                    <div id="file-list" class="file-list"></div>
+                    <div class="conversation-status" id="conversation-status" style="display: none;">
+                        <p class="conversation-text">💬 <span id="conversation-count">0</span> queries in conversation
+                            history</p>
+                        <div class="conversation-controls">
+                            <button class="view-history-btn" onclick="toggleConversationHistory()">View History</button>
+                            <button class="clear-conversation-btn" onclick="clearConversation()">Clear
+                                Conversation</button>
+                        </div>
+
+                        <!-- Conversation History Panel -->
+                        <div class="conversation-history" id="conversation-history" style="display: none;">
+                            <h4 class="history-title">📜 Conversation History</h4>
+                            <div class="history-content" id="history-content">
+                                <!-- History items will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                    <button class="clear-btn" onclick="clearDocuments()" style="display: none;">Clear All
+                        Documents</button>
+                </div>
+            </div>
+
+            <!-- Query Section -->
+            <div class="query-section" id="query-section" style="display: none;">
+                <h2>❓ Ask Questions</h2>
+                <div class="conversation-indicator" id="conversation-indicator" style="display: none;">
+                    <div class="conversation-tip">
+                        💡 <strong>Smart Conversation:</strong> You can ask follow-up questions like "What about a
+                        50-year-old female?" and I'll remember the context from previous queries.
+                    </div>
+                </div>
+                <div class="input-section">
+                    <label class="input-label" for="query-input">💬 What would you like to know about the uploaded
+                        documents?</label>
+                    <textarea id="query-input"
+                        placeholder="e.g., What are the key policy terms? Or follow up with: What about a 50-year-old female?"></textarea>
+                </div>
+
+                <button class="analyze-btn" onclick="processQuery()">
+                    <span class="loading-spinner"></span>
+                    <span class="btn-text">🔍 Analyze Question</span>
+                </button>
+            </div>
+
+            <div id="response-container">
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Conversation Modal -->
+    <div id="conversationModal" class="conversation-modal">
+        <div class="conversation-modal-content">
+            <div class="conversation-modal-header">
+                <h2>Conversation Details</h2>
+                <div class="conversation-nav">
+                    <button id="prevConversation" class="nav-btn">
+                        ← Previous
+                    </button>
+                    <div id="conversationCounter" class="conversation-counter">
+                        1 of 1
+                    </div>
+                    <button id="nextConversation" class="nav-btn">
+                        Next →
+                    </button>
+                </div>
+                <button id="closeModal" class="close-modal">×</button>
+            </div>
+            <div class="conversation-modal-body">
+                <div id="detailedConversation" class="detailed-conversation">
+                    <!-- Conversation details will be inserted here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // File upload handling
+        const uploadArea = document.getElementById('upload-area');
+        const fileInput = document.getElementById('file-input');
+        const documentStatus = document.getElementById('document-status');
+        const querySection = document.getElementById('query-section');
+        const uploadLoader = document.getElementById('upload-loader');
+        const uploadStatus = document.getElementById('upload-status');
+        const fileList = document.getElementById('file-list');
+        const conversationStatus = document.getElementById('conversation-status');
+        const conversationIndicator = document.getElementById('conversation-indicator');
+        const conversationHistory = document.getElementById('conversation-history');
+        const historyContent = document.getElementById('history-content');
+
+        let isUploading = false;
+        let uploadedFiles = new Set();
+        let conversationCount = 0;
+        let isHistoryVisible = false;
+
+        // Drag and drop events
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            if (!isUploading) {
+                uploadArea.classList.add('dragover');
+            }
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            if (!isUploading) {
+                const files = e.dataTransfer.files;
+                handleFiles(files);
+            }
+        });
+
+        uploadArea.addEventListener('click', () => {
+            if (!isUploading) {
+                fileInput.click();
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (!isUploading) {
+                handleFiles(e.target.files);
+            }
+        });
+
+        async function handleFiles(files) {
+            if (isUploading) return;
+
+            for (const file of files) {
+                if (file.type === 'application/pdf') {
+                    // Check for duplicates
+                    if (uploadedFiles.has(file.name)) {
+                        showNotification(`${file.name} has already been uploaded.`, 'warning');
+                        continue;
+                    }
+                    await uploadFile(file);
+                } else {
+                    showNotification(`${file.name} is not a PDF file. Only PDF files are supported.`, 'error');
+                }
+            }
+
+            // Clear file input
+            fileInput.value = '';
+            await updateDocumentStatus();
+        }
+
+        async function uploadFile(file) {
+            if (isUploading) return;
+
+            isUploading = true;
+            showUploadLoader(true, `Uploading ${file.name}...`);
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('/upload-document', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                uploadedFiles.add(file.name);
+                showNotification(`${file.name} uploaded successfully!`, 'success');
+                console.log(`Uploaded ${file.name}: ${data.message}`);
+
+            } catch (error) {
+                console.error('Upload error:', error);
+                showNotification(`Failed to upload ${file.name}: ${error.message}`, 'error');
+            } finally {
+                isUploading = false;
+                showUploadLoader(false);
+            }
+        }
+
+        function showUploadLoader(show, message = '') {
+            if (show) {
+                uploadLoader.style.display = 'block';
+                uploadArea.classList.add('uploading');
+                uploadStatus.textContent = message;
+            } else {
+                uploadLoader.style.display = 'none';
+                uploadArea.classList.remove('uploading');
+            }
+        }
+
+        function showNotification(message, type = 'info') {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${type}`;
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 1rem 1.5rem;
+                border-radius: 12px;
+                color: white;
+                font-weight: 500;
+                z-index: 1000;
+                animation: slideInRight 0.3s ease;
+                max-width: 300px;
+                box-shadow: var(--shadow-lg);
+            `;
+
+            // Set background color based on type
+            switch (type) {
+                case 'success':
+                    notification.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+                    break;
+                case 'error':
+                    notification.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
+                    break;
+                case 'warning':
+                    notification.style.background = 'linear-gradient(135deg, #f59e0b, #d97706)';
+                    break;
+                default:
+                    notification.style.background = 'linear-gradient(135deg, #6366f1, #4f46e5)';
+            }
+
+            notification.textContent = message;
+            document.body.appendChild(notification);
+
+            // Remove after 3 seconds
+            setTimeout(() => {
+                notification.style.animation = 'slideOutRight 0.3s ease forwards';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
+            }, 3000);
+        }
+
+        async function updateDocumentStatus() {
+            try {
+                const response = await fetch('/document-status');
+                const data = await response.json();
+
+                if (data.documents_count > 0) {
+                    documentStatus.style.display = 'block';
+                    querySection.style.display = 'block';
+                    document.getElementById('status-text').textContent =
+                        `${data.documents_count} document(s) uploaded. ${data.status}`;
+
+                    // Update file list
+                    fileList.innerHTML = '';
+                    if (data.filenames) {
+                        data.filenames.forEach(filename => {
+                            const fileTag = document.createElement('div');
+                            fileTag.className = 'file-tag';
+                            fileTag.textContent = filename;
+                            fileList.appendChild(fileTag);
+                        });
+                    }
+
+                    // Update conversation status
+                    conversationCount = data.conversation_history_count || 0;
+                    if (conversationCount > 0) {
+                        conversationStatus.style.display = 'block';
+                        conversationIndicator.style.display = 'block';
+                        document.getElementById('conversation-count').textContent = conversationCount;
+                    } else {
+                        conversationStatus.style.display = 'none';
+                        conversationIndicator.style.display = 'none';
+                    }
+
+                    document.querySelector('.clear-btn').style.display = 'inline-block';
+                } else {
+                    documentStatus.style.display = 'none';
+                    querySection.style.display = 'none';
+                    conversationStatus.style.display = 'none';
+                    conversationIndicator.style.display = 'none';
+                    uploadedFiles.clear();
+                    conversationCount = 0;
+                }
+            } catch (error) {
+                console.error('Status update error:', error);
+            }
+        } async function clearDocuments() {
+            try {
+                const response = await fetch('/clear-documents', {
+                    method: 'POST'
+                });
+
+                if (response.ok) {
+                    uploadedFiles.clear();
+                    await updateDocumentStatus();
+                    document.getElementById('response-container').innerHTML = '';
+                    document.getElementById('query-input').value = '';
+                    showNotification('All documents cleared successfully!', 'success');
+                    console.log('Documents cleared successfully');
+                }
+            } catch (error) {
+                console.error('Clear documents error:', error);
+                showNotification('Failed to clear documents', 'error');
+            }
+        }
+
+        async function clearConversation() {
+            try {
+                const response = await fetch('/clear-conversation', {
+                    method: 'POST'
+                });
+
+                if (response.ok) {
+                    await updateDocumentStatus();
+                    // Hide history if it was visible
+                    if (isHistoryVisible) {
+                        toggleConversationHistory();
+                    }
+                    showNotification('Conversation history cleared successfully!', 'success');
+                    console.log('Conversation history cleared successfully');
+                }
+            } catch (error) {
+                console.error('Clear conversation error:', error);
+                showNotification('Failed to clear conversation history', 'error');
+            }
+        }
+
+        async function toggleConversationHistory() {
+            const viewHistoryBtn = document.querySelector('.view-history-btn');
+
+            if (isHistoryVisible) {
+                // Hide history
+                conversationHistory.style.display = 'none';
+                viewHistoryBtn.textContent = 'View History';
+                viewHistoryBtn.classList.remove('active');
+                isHistoryVisible = false;
+            } else {
+                // Show history
+                await loadConversationHistory();
+                conversationHistory.style.display = 'block';
+                viewHistoryBtn.textContent = 'Hide History';
+                viewHistoryBtn.classList.add('active');
+                isHistoryVisible = true;
+            }
+        }
+
+        async function loadConversationHistory() {
+            try {
+                const response = await fetch('/conversation-history');
+                const data = await response.json();
+
+                if (data.conversation_history && data.conversation_history.length > 0) {
+                    displayConversationHistory(data.conversation_history);
+                } else {
+                    historyContent.innerHTML = '<p class="no-history">No conversation history available.</p>';
+                }
+            } catch (error) {
+                console.error('Failed to load conversation history:', error);
+                historyContent.innerHTML = '<p class="error-history">Failed to load conversation history.</p>';
+            }
+        }
+
+        function displayConversationHistory(history) {
+            historyContent.innerHTML = '';
+            
+            history.forEach((item, index) => {
+                const historyItem = document.createElement('div');
+                historyItem.className = 'history-item';
+                historyItem.style.cursor = 'pointer';
+                
+                // Determine decision class
+                let decisionClass = 'pending';
+                if (item.response.Decision.toLowerCase().includes('approved')) {
+                    decisionClass = 'approved';
+                } else if (item.response.Decision.toLowerCase().includes('rejected')) {
+                    decisionClass = 'rejected';
+                }
+                
+                // Count highlighted clauses for summary
+                const clauseCount = item.response.Clauses ? item.response.Clauses.length : 0;
+                const highlightCount = item.response.Clauses ? 
+                    item.response.Clauses.reduce((sum, clause) => sum + (clause.highlight_phrases ? clause.highlight_phrases.length : 0), 0) : 0;
+                
+                historyItem.innerHTML = `
+                    <div class="history-query">
+                        <strong>Q${index + 1}:</strong> ${item.query}
+                    </div>
+                    <div class="history-response">
+                        <span class="history-decision ${decisionClass}">
+                            ${item.response.Decision}
+                        </span>
+                        <br>
+                        <span class="history-amount">Amount: ₹${typeof item.response.Amount === 'number' ? item.response.Amount.toLocaleString() : item.response.Amount}</span>
+                        <br>
+                        <div style="margin-top: 0.3rem;">
+                            ${item.response.Justification.length > 150 ? 
+                                item.response.Justification.substring(0, 150) + '...' : 
+                                item.response.Justification}
+                        </div>
+                        ${clauseCount > 0 ? `
+                            <div style="margin-top: 0.5rem; font-size: 0.65rem; color: var(--text-light);">
+                                📋 ${clauseCount} clause${clauseCount > 1 ? 's' : ''} referenced${highlightCount > 0 ? `, ${highlightCount} key phrase${highlightCount > 1 ? 's' : ''} highlighted` : ''}
+                            </div>
+                        ` : ''}
+                        <div style="margin-top: 0.5rem; font-size: 0.65rem; color: #667eea; font-weight: 600;">
+                            👆 Click to view full conversation
+                        </div>
+                    </div>
+                `;
+                
+                // Add click event to open detailed conversation
+                historyItem.addEventListener('click', () => {
+                    openConversationModal(index, history);
+                });
+                
+                historyContent.appendChild(historyItem);
+            });
+            
+            // Add scroll to bottom
+            historyContent.scrollTop = historyContent.scrollHeight;
+        }        async function processQuery() {
+            const query = document.getElementById('query-input').value;
+            const responseContainer = document.getElementById('response-container');
+            const analyzeBtn = document.querySelector('.analyze-btn');
+            const spinner = document.querySelector('.loading-spinner');
+            const btnText = document.querySelector('.btn-text');
+
+            if (!query.trim()) {
+                responseContainer.innerHTML = '<div class="error-message">Please enter a question.</div>';
+                return;
+            }
+
+            // Show loading state
+            analyzeBtn.disabled = true;
+            spinner.style.display = 'inline-block';
+            btnText.textContent = 'Analyzing...';
+            responseContainer.innerHTML = '<div class="response-section"><h3>🔄 Processing your question...</h3><p>Please wait while we analyze the documents with AI.</p></div>';
+
+            try {
+                const response = await fetch('/process-query', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        query: query,
+                        include_history: true  // Enable conversation history
+                    }),
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                displayResults(data);
+
+                // Update conversation status after successful query
+                await updateDocumentStatus();
+
+                // Refresh history if it's currently visible
+                if (isHistoryVisible) {
+                    await loadConversationHistory();
+                }
+
+            } catch (error) {
+                responseContainer.innerHTML = `<div class="error-message"><h3>❌ Error: ${error.message}</h3><p>Please try again or upload a document first.</p></div>`;
+                console.error('Query error:', error);
+            } finally {
+                // Reset button state
+                analyzeBtn.disabled = false;
+                spinner.style.display = 'none';
+                btnText.textContent = '🔍 Analyze Question';
+            }
+        }
+
+        function highlightText(text, phrases) {
+            if (!phrases || phrases.length === 0) {
+                return text;
+            }
+            
+            let highlightedText = text;
+            
+            // Sort phrases by length (longest first) to avoid partial matches
+            const sortedPhrases = phrases.sort((a, b) => b.length - a.length);
+            
+            sortedPhrases.forEach(phrase => {
+                if (phrase && phrase.trim()) {
+                    // Create a case-insensitive regex that preserves word boundaries
+                    const regex = new RegExp(`(${phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+                    highlightedText = highlightedText.replace(regex, '<span class="highlighted-text">$1</span>');
+                }
+            });
+            
+            return highlightedText;
+        }
+
+        // Modal functionality for detailed conversation viewing
+        let currentConversationIndex = 0;
+        let modalConversationHistory = [];
+
+        function openConversationModal(index, history) {
+            currentConversationIndex = index;
+            modalConversationHistory = history;
+            
+            const modal = document.getElementById('conversationModal');
+            updateConversationModal();
+            modal.style.display = 'block';
+        }
+
+        function updateConversationModal() {
+            const conversation = modalConversationHistory[currentConversationIndex];
+            const detailedConversation = document.getElementById('detailedConversation');
+            const conversationCounter = document.getElementById('conversationCounter');
+            const prevBtn = document.getElementById('prevConversation');
+            const nextBtn = document.getElementById('nextConversation');
+            
+            // Update counter
+            conversationCounter.textContent = `${currentConversationIndex + 1} of ${modalConversationHistory.length}`;
+            
+            // Update navigation buttons
+            prevBtn.disabled = currentConversationIndex === 0;
+            nextBtn.disabled = currentConversationIndex === modalConversationHistory.length - 1;
+            
+            // Determine decision class
+            let decisionClass = 'pending';
+            if (conversation.response.Decision.toLowerCase().includes('approved')) {
+                decisionClass = 'approved';
+            } else if (conversation.response.Decision.toLowerCase().includes('rejected')) {
+                decisionClass = 'rejected';
+            }
+            
+            // Build clauses HTML
+            let clausesHtml = '';
+            if (conversation.response.Clauses && conversation.response.Clauses.length > 0) {
+                clausesHtml = `
+                    <div class="clauses-section">
+                        <h3>📋 Supporting Clauses & Evidence</h3>
+                        ${conversation.response.Clauses.map(clause => `
+                            <div class="clause-detail">
+                                <div class="clause-header">
+                                    ${clause.name}
+                                    ${clause.page_number ? `<span style="float: right; font-size: 0.8rem;">Page ${clause.page_number}</span>` : ''}
+                                </div>
+                                <div class="clause-content">
+                                    <div class="clause-text">
+                                        "${clause.content}"
+                                    </div>
+                                    ${clause.source_snippet ? `
+                                        <div class="source-snippet">
+                                            <div class="snippet-header">
+                                                📄 Document Context:
+                                                ${clause.document_name ? `<span class="document-name">${clause.document_name}</span>` : ''}
+                                            </div>
+                                            <div class="snippet-text">${highlightText(clause.source_snippet, clause.highlight_phrases || [])}</div>
+                                            ${clause.highlight_phrases && clause.highlight_phrases.length > 0 ? `
+                                                <div class="highlight-legend">
+                                                    <strong>Key Decision Factors:</strong>
+                                                    ${clause.highlight_phrases.map(phrase => `<span class="highlight-tag">${phrase}</span>`).join('')}
+                                                </div>
+                                            ` : ''}
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+            
+            detailedConversation.innerHTML = `
+                <div class="conversation-query">
+                    <strong>Query:</strong> ${conversation.query}
+                </div>
+                
+                <div class="conversation-decision-section">
+                    <h3>
+                        🎯 Decision: 
+                        <span class="decision-badge ${decisionClass}">${conversation.response.Decision}</span>
+                    </h3>
+                </div>
+                
+                <div class="amount-display">
+                    💰 Amount: ₹${typeof conversation.response.Amount === 'number' ? conversation.response.Amount.toLocaleString() : conversation.response.Amount}
+                </div>
+                
+                <div class="conversation-decision-section">
+                    <h3>📝 Detailed Justification</h3>
+                    <div class="justification-text">
+                        ${conversation.response.Justification}
+                    </div>
+                </div>
+                
+                ${clausesHtml}
+            `;
+        }
+
+        function closeConversationModal() {
+            const modal = document.getElementById('conversationModal');
+            modal.style.display = 'none';
+        }
+
+        function navigateConversation(direction) {
+            if (direction === 'prev' && currentConversationIndex > 0) {
+                currentConversationIndex--;
+            } else if (direction === 'next' && currentConversationIndex < modalConversationHistory.length - 1) {
+                currentConversationIndex++;
+            }
+            updateConversationModal();
+        }
+
+        // Event listeners for modal
+        document.getElementById('closeModal').addEventListener('click', closeConversationModal);
+        document.getElementById('prevConversation').addEventListener('click', () => navigateConversation('prev'));
+        document.getElementById('nextConversation').addEventListener('click', () => navigateConversation('next'));
+        
+        // Close modal when clicking outside
+        document.getElementById('conversationModal').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) {
+                closeConversationModal();
+            }
+        });
+        
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            const modal = document.getElementById('conversationModal');
+            if (modal.style.display === 'block') {
+                if (e.key === 'Escape') {
+                    closeConversationModal();
+                } else if (e.key === 'ArrowLeft') {
+                    navigateConversation('prev');
+                } else if (e.key === 'ArrowRight') {
+                    navigateConversation('next');
+                }
+            }
+        });
+
+        function displayResults(data) {
+            const responseContainer = document.getElementById('response-container');
+
+            // Determine decision class for styling
+            let decisionClass = 'decision-pending';
+            let decisionIcon = '⏳';
+
+            if (data.Decision.toLowerCase().includes('approved')) {
+                decisionClass = 'decision-approved';
+                decisionIcon = '✅';
+            } else if (data.Decision.toLowerCase().includes('rejected')) {
+                decisionClass = 'decision-rejected';
+                decisionIcon = '❌';
+            }
+
+            // Add conversation indicator if this is part of a conversation
+            let conversationIndicator = '';
+            if (conversationCount > 0) {
+                conversationIndicator = `
+                    <div class="conversation-context">
+                        <div class="conversation-badge">
+                            💬 Query #${conversationCount + 1} in conversation
+                        </div>
+                    </div>
+                `;
+            }
+
+            responseContainer.innerHTML = `
+                ${conversationIndicator}
+                <div class="response-section ${decisionClass}">
+                    <h3><span class="icon">${decisionIcon}</span>Analysis Result</h3>
+                    <p><strong>${data.Decision}</strong></p>
+                </div>
+                <div class="response-section">
+                    <h3><span class="icon">💰</span>Amount</h3>
+                    <p class="amount">₹${typeof data.Amount === 'number' ? data.Amount.toLocaleString() : data.Amount}</p>
+                </div>
+                <div class="response-section">
+                    <h3><span class="icon">📋</span>Detailed Explanation</h3>
+                    <p class="justification">${data.Justification}</p>
+                </div>
+                <div class="response-section">
+                    <h3><span class="icon">📜</span>Relevant Document Sections</h3>
+                    ${data.Clauses.map(clause => `
+                        <div class="clause">
+                            <div class="clause-header">
+                                <h4>📄 ${clause.name}</h4>
+                                ${clause.page_number ? `<span class="clause-meta">Page ${clause.page_number}</span>` : ''}
+                            </div>
+                            <div class="clause-content">${clause.content}</div>
+                            ${clause.source_snippet ? `
+                                <div class="source-snippet">
+                                    <div class="snippet-label">Document Context</div>
+                                    <div class="snippet-text">${highlightText(clause.source_snippet, clause.highlight_phrases || [])}</div>
+                                    ${clause.document_name ? `<div style="font-size: 0.7rem; color: var(--text-light); margin-top: 0.5rem;">Source: ${clause.document_name}</div>` : ''}
+                                    <div class="highlight-legend">
+                                        <div class="highlight-indicator"></div>
+                                        <span>Key decision factors highlighted</span>
+                                    </div>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        // Add CSS for animations
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideInRight {
+                from {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+            }
+            
+            @keyframes slideOutRight {
+                from {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+                to {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Initialize document status on page load
+        document.addEventListener('DOMContentLoaded', updateDocumentStatus);
+    </script>
+</body>
+
+</html>
